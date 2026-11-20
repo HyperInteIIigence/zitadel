@@ -4,7 +4,7 @@
   <p class="cnsl-secondary-text">Pilot traffic must use a private, authenticated HyperSMS relay. Saving does not activate SMS delivery.</p>
 
   @if (active) {
-    <p data-e2e="http-sms-active-edit-locked">Deactivate this provider before changing its endpoint.</p>
+    <p data-e2e="http-sms-active-edit-locked">This SMS provider is ACTIVE for the entire instance. Saving requires confirmation and affects live SMS delivery immediately.</p>
   }
 
   <form [formGroup]="form" (ngSubmit)="save()">
@@ -28,7 +28,7 @@
     mat-raised-button
     color="primary"
     data-e2e="save-http-sms-provider"
-    [disabled]="active || form.invalid || saving"
+    [disabled]="form.invalid || saving"
     (click)="save()"
   >Save</button>
 </div>
