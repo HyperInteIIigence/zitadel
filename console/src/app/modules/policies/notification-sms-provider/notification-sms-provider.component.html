@@ -92,7 +92,7 @@
             >
             <span class="fill-space"></span>
           </div>
-          <p class="cnsl-secondary-text">Endpoint: {{ provider.http.endpoint }}</p>
+          <p class="cnsl-secondary-text">Endpoint: {{ provider.http.endpoint || 'Not configured' }}</p>
         </cnsl-card>
       }
     }
