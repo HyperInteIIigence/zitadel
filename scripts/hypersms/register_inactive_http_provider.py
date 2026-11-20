@@ -45,7 +45,7 @@ def main():
     # curl validates server TLS using the host's configured trust store.
     # Pass the bearer header through stdin (--config -), never an argv value.
     # Do not expose other Phase-injected secrets in the curl child environment.
-    if any(char in token for char in ('\\r', '\\n', '\\x00', '"', '\\\\')):
+    if any(char in token for char in ('\r', '\n', '\x00', '"', '\\')):
         raise RuntimeError("Unsafe credential characters")
 
     def post(path, data):
@@ -57,21 +57,21 @@ def main():
             "--header", "Content-Type: application/json",
             "--header", "Accept: application/json",
             "--data-binary", json.dumps(data, separators=(",", ":")),
-            "--write-out", "\\nHYPERSMS_HTTP_STATUS:%{http_code}",
+            "--write-out", "\nHYPERSMS_HTTP_STATUS:%{http_code}",
             url,
         ]
         if args.ca_file:
             cmd.extend(["--cacert", args.ca_file])
         proc = subprocess.run(
             cmd,
-            input='header = "Authorization: Bearer ' + token + '"\\n',
+            input='header = "Authorization: Bearer ' + token + '"\n',
             capture_output=True,
             text=True,
             timeout=16,
             check=False,
             env={"PATH": os.environ.get("PATH", "/usr/bin:/bin")},
         )
-        marker = "\\nHYPERSMS_HTTP_STATUS:"
+        marker = "\nHYPERSMS_HTTP_STATUS:"
         if marker not in proc.stdout:
             raise RuntimeError("Verified ZITADEL API request failed (no status)")
         body, status = proc.stdout.rsplit(marker, 1)
