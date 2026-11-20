@@ -17,7 +17,7 @@
       <input cnslInput formControlName="endpoint" data-e2e="edit-http-sms-endpoint" />
     </cnsl-form-field>
     @if (form.controls.endpoint.invalid && form.controls.endpoint.touched) {
-      <p data-e2e="http-sms-invalid-endpoint">Use a verified https://intelligence.hyperit.net.au/__hypersms/… URL with no credentials or query string.</p>
+      <p data-e2e="http-sms-invalid-endpoint">Use an approved HTTPS /__hypersms/ endpoint on gatekeeper.hyperintelligence.infrastructure or intelligence.hyperit.net.au, without credentials or query strings.</p>
     }
     <p class="cnsl-secondary-text">PlainApp API tokens, GraphQL subscriptions and sending numbers are configured securely in the separate Go adapter, not in this dialog.</p>
   </form>
