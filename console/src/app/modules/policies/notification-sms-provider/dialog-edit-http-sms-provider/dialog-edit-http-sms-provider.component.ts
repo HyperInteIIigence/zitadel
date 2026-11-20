@@ -61,10 +61,11 @@ export class DialogEditHttpSmsProviderComponent {
   }
 
   public save(): void {
-    if (this.saving || this.active || this.form.invalid || !this.data.provider.id) {
+    if (this.saving || this.form.invalid || !this.data.provider.id) {
       this.form.markAllAsTouched();
       return;
     }
+    if (this.active && !window.confirm('This SMS provider is ACTIVE for the entire ZITADEL instance. Updating its endpoint will immediately affect production SMS delivery. Continue?')) return;
     const req = new UpdateSMSProviderHTTPRequest();
     req.setId(this.data.provider.id);
     req.setDescription(this.form.controls.description.value.trim());
