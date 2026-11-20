@@ -55,3 +55,12 @@ an isolated ZITADEL instance.
    API image selection, without changing static-IP addresses.
 2. Recreate only `zitadel-api` and verify login, API health, SMS settings.
 3. Leave current SMS provider activation unchanged.
+
+## Observed device blocker (20 November 2026)
+
+- PlainApp device is reachable in the browser at `https://10.1.1.104:8443`, but native TLS verification from HyperIntelligence to `https://10.1.1.104:8443/graphql` fails: the certificate subject `Plain` does not match the IP hostname.
+- Do **not** use `--insecure`, `-k`, disable TLS verification or downgrade to HTTP.
+- Fix by issuing/using a trusted certificate with an IP SAN for `10.1.1.104` **or** by using a trusted hostname present in the certificate SAN and routing it privately to the device. A matching subject/CN alone does not ensure a standards-compliant SAN certificate.
+- Next, confirm the installed PlainApp build is SMS-capable (the published docs say the Google Play build omits SMS support), grant SMS permission, and securely provision a client ID/API token in Phase.
+- The published sendSms GraphQL schema may differ across versions; introspect the installed build rather than hardcoding a mutation signature.
+- Never place the PlainApp API token in ZITADEL's HTTP provider fields or browser-side JavaScript. The Go relay must hold that credential server-side, and enforce a destination-number allowlist.
