@@ -1,5 +1,5 @@
 import { Component, Inject } from '@angular/core';
-import { AbstractControl, FormControl, ValidationErrors, Validators } from '@angular/forms';
+import { AbstractControl, FormControl, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { UpdateSMSProviderHTTPRequest } from 'src/app/proto/generated/zitadel/admin_pb';
 import { SMSProvider, SMSProviderConfigState } from 'src/app/proto/generated/zitadel/settings_pb';
@@ -36,7 +36,7 @@ export function hyperSmsEndpointValidator(control: AbstractControl): ValidationE
   standalone: false,
 })
 export class DialogEditHttpSmsProviderComponent {
-  public readonly form = new FormControlGroup({
+  public readonly form = new FormGroup({
     description: new FormControl('', {
       nonNullable: true,
       validators: [Validators.maxLength(200)],
@@ -73,5 +73,3 @@ export class DialogEditHttpSmsProviderComponent {
   }
 }
 
-/** Alias kept as a local class so strict typed forms work with Angular templates. */
-import { FormGroup as FormControlGroup } from '@angular/forms';
