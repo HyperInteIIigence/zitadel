@@ -97,8 +97,31 @@
               >{{ 'SETTING.SMS.SMSPROVIDERSTATE.' + provider.state | translate }}</span
             >
             <span class="fill-space"></span>
+            @if (isHyperSMSProvider(provider)) {
+              <button
+                mat-stroked-button
+                type="button"
+                [disabled]="true"
+                title="Production activation locked until the authenticated PlainApp relay passes pilot verification."
+                data-e2e="http-sms-activate-locked"
+              >Activate</button>
+              <button
+                mat-icon-button
+                type="button"
+                [disabled]="(['iam.write'] | hasRole | async) === false || provider.state !== SMSProviderConfigState.SMS_PROVIDER_CONFIG_INACTIVE"
+                (click)="editHTTPSMSProvider(provider)"
+                data-e2e="edit-http-sms-provider"
+                aria-label="Edit HyperSMS provider"
+                title="Edit HTTP provider"
+              ><i class="las la-pen"></i></button>
+            }
           </div>
           <p class="cnsl-secondary-text">Endpoint: {{ provider.http.endpoint || 'Not configured' }}</p>
+          @if (isHyperSMSProvider(provider)) {
+            <p class="cnsl-secondary-text" data-e2e="http-sms-pilot-status">
+              Pilot configuration only. ZITADEL's SMS provider is instance-wide and must not be activated until the secure PlainApp GraphQL bridge is tested.
+            </p>
+          }
         </cnsl-card>
       }
     }
