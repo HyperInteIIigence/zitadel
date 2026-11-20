@@ -1,5 +1,5 @@
 import { Component, Input, OnInit } from '@angular/core';
-import { AddSMSProviderTwilioRequest, UpdateSMSProviderTwilioRequest } from 'src/app/proto/generated/zitadel/admin_pb';
+import { AddSMSProviderTwilioRequest, UpdateSMSProviderHTTPRequest, UpdateSMSProviderTwilioRequest } from 'src/app/proto/generated/zitadel/admin_pb';
 import { SMSProvider, SMSProviderConfigState } from 'src/app/proto/generated/zitadel/settings_pb';
 
 import { MatDialog } from '@angular/material/dialog';
@@ -9,6 +9,7 @@ import { InfoSectionType } from '../../info-section/info-section.component';
 import { WarnDialogComponent } from '../../warn-dialog/warn-dialog.component';
 import { PolicyComponentServiceType } from '../policy-component-types.enum';
 import { DialogAddSMSProviderComponent } from './dialog-add-sms-provider/dialog-add-sms-provider.component';
+import { DialogEditHttpSmsProviderComponent } from './dialog-edit-http-sms-provider/dialog-edit-http-sms-provider.component';
 
 @Component({
   selector: 'cnsl-notification-sms-provider',
@@ -87,6 +88,34 @@ export class NotificationSMSProviderComponent implements OnInit {
         }
       }
     });
+  }
+
+  /**
+   * The HTTP provider's endpoint is an instance-wide authentication setting.
+   * Editing is restricted to the HyperSMS pilot provider and never activates it.
+   */
+  public editHTTPSMSProvider(provider: SMSProvider.AsObject): void {
+    if (!this.isHyperSMSProvider(provider) || !provider.http || !provider.id) return;
+    if (provider.state !== SMSProviderConfigState.SMS_PROVIDER_CONFIG_INACTIVE) return;
+
+    const dialogRef = this.dialog.open(DialogEditHttpSmsProviderComponent, {
+      width: '560px',
+      data: { provider },
+    });
+    dialogRef.afterClosed().subscribe((req?: UpdateSMSProviderHTTPRequest) => {
+      if (!req || req.getId() !== provider.id) return;
+      this.service
+        .updateSMSProviderHTTP(req)
+        .then(() => {
+          this.toast.showInfo('SETTING.SMS.TWILIO.UPDATED', true);
+          this.fetchData();
+        })
+        .catch((error) => this.toast.showError(error));
+    });
+  }
+
+  public isHyperSMSProvider(provider: SMSProvider.AsObject): boolean {
+    return !!provider.http && !!provider.id && (provider.description || '').startsWith('HyperSMS / PlainApp');
   }
 
   public toggleSMSProviderState(id: string): void {
