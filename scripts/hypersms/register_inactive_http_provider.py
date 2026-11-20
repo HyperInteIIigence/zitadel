@@ -30,6 +30,11 @@ def load_token(path):
         if not token_file.is_file() or (st.st_mode & 0o077):
             raise RuntimeError("Token file must exist and be owner-only (mode 0600)")
         return token_file.read_text(encoding="utf-8").strip()
+    # Phase CLI 'run' injects secrets into this process's environment.
+    # Prefer the exact canonical Phase key; do not print or persist it.
+    injected = os.environ.get("ZITADEL_API_TOKEN", "").strip()
+    if injected:
+        return injected
     return getpass.getpass("ZITADEL instance-admin access token (hidden): ").strip()
 
 
