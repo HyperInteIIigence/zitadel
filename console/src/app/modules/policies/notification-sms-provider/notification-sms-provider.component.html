@@ -60,6 +60,21 @@
       </div>
     </cnsl-card>
 
+    <!-- This is a visual placeholder only; provider registration is separate.
+         Do not expose an activation control until the webhook-to-GraphQL bridge is verified. -->
+    @if (!hyperSMSProvider) {
+      <cnsl-card class="sms-card" [nomargin]="true">
+        <div class="sms-provider" data-e2e="hypersms-test-placeholder">
+          <h4 class="title">HyperSMS / PlainApp (TEST)</h4>
+          <span class="state inactive">Not registered</span>
+          <span class="fill-space"></span>
+        </div>
+        <p class="cnsl-secondary-text">
+          Placeholder only. PlainApp GraphQL adapter not connected; SMS sending disabled.
+        </p>
+      </cnsl-card>
+    }
+
     <!-- HTTP providers are registered through the native ZITADEL Admin API.
          Keep this Console view read-only until a tested provider bridge is available. -->
     @for (provider of smsProviders; track provider.id) {
