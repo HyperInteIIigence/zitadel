@@ -98,13 +98,23 @@
             >
             <span class="fill-space"></span>
             @if (isHyperSMSProvider(provider)) {
-              <button
-                mat-stroked-button
-                type="button"
-                [disabled]="true"
-                title="Production activation locked until the authenticated PlainApp relay passes pilot verification."
-                data-e2e="http-sms-activate-locked"
-              >Activate</button>
+              @if (provider.state === SMSProviderConfigState.SMS_PROVIDER_CONFIG_INACTIVE) {
+                <button
+                  mat-stroked-button
+                  type="button"
+                  [disabled]="true"
+                  title="Activation locked until the authenticated PlainApp relay passes pilot verification."
+                  data-e2e="http-sms-activate-locked"
+                >Activate</button>
+              } @else if (provider.state === SMSProviderConfigState.SMS_PROVIDER_CONFIG_ACTIVE) {
+                <button
+                  mat-stroked-button
+                  type="button"
+                  [disabled]="(['iam.write'] | hasRole | async) === false"
+                  (click)="toggleSMSProviderState(provider.id)"
+                  data-e2e="http-sms-deactivate"
+                >Deactivate</button>
+              }
               <button
                 mat-icon-button
                 type="button"
@@ -114,6 +124,16 @@
                 aria-label="Edit HyperSMS provider"
                 title="Edit HTTP provider"
               ><i class="las la-pen"></i></button>
+              <button
+                color="warn"
+                mat-icon-button
+                type="button"
+                [disabled]="(['iam.write'] | hasRole | async) === false || provider.state !== SMSProviderConfigState.SMS_PROVIDER_CONFIG_INACTIVE"
+                (click)="removeSMSProvider(provider.id)"
+                data-e2e="remove-http-sms-provider"
+                aria-label="Delete inactive HyperSMS provider"
+                title="Delete provider"
+              ><i class="las la-trash"></i></button>
             }
           </div>
           <p class="cnsl-secondary-text">Endpoint: {{ provider.http.endpoint || 'Not configured' }}</p>
