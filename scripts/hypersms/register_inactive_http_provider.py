@@ -9,18 +9,11 @@ import getpass
 import json
 import os
 from pathlib import Path
-import ssl
 import sys
-import urllib.error
-import urllib.request
+import subprocess
 
 DESCRIPTION = "HyperSMS / PlainApp (TEST - INACTIVE)"
 API_ORIGIN = "https://gatekeeper.hyperintelligence.infrastructure"
-
-
-class NoRedirect(urllib.request.HTTPRedirectHandler):
-    def redirect_request(self, request, fp, code, msg, headers, newurl):
-        raise RuntimeError("Unexpected API redirect blocked")
 
 
 def load_token(path):
@@ -49,29 +42,45 @@ def main():
     if not token:
         raise RuntimeError("Authorised instance-admin token missing")
 
-    context = ssl.create_default_context(cafile=args.ca_file)
-    opener = urllib.request.build_opener(
-        urllib.request.HTTPSHandler(context=context), NoRedirect()
-    )
+    # curl validates server TLS using the host's configured trust store.
+    # Pass the bearer header through stdin (--config -), never an argv value.
+    # Do not expose other Phase-injected secrets in the curl child environment.
+    if any(char in token for char in ('\\r', '\\n', '\\x00', '"', '\\\\')):
+        raise RuntimeError("Unsafe credential characters")
 
     def post(path, data):
-        request = urllib.request.Request(
-            API_ORIGIN + path,
-            data=json.dumps(data, separators=(",", ":")).encode("utf-8"),
-            headers={
-                "Authorization": "Bearer " + token,
-                "Content-Type": "application/json",
-                "Accept": "application/json",
-            },
-            method="POST",
+        url = API_ORIGIN + path
+        cmd = [
+            "curl", "--silent", "--show-error",
+            "--max-time", "12", "--max-redirs", "0", "--proto", "=https",
+            "--request", "POST", "--config", "-",
+            "--header", "Content-Type: application/json",
+            "--header", "Accept: application/json",
+            "--data-binary", json.dumps(data, separators=(",", ":")),
+            "--write-out", "\\nHYPERSMS_HTTP_STATUS:%{http_code}",
+            url,
+        ]
+        if args.ca_file:
+            cmd.extend(["--cacert", args.ca_file])
+        proc = subprocess.run(
+            cmd,
+            input='header = "Authorization: Bearer ' + token + '"\\n',
+            capture_output=True,
+            text=True,
+            timeout=16,
+            check=False,
+            env={"PATH": os.environ.get("PATH", "/usr/bin:/bin")},
         )
+        marker = "\\nHYPERSMS_HTTP_STATUS:"
+        if marker not in proc.stdout:
+            raise RuntimeError("Verified ZITADEL API request failed (no status)")
+        body, status = proc.stdout.rsplit(marker, 1)
+        if proc.returncode != 0 or status.strip() != "200":
+            raise RuntimeError("ZITADEL API request rejected: HTTP " + status.strip())
         try:
-            with opener.open(request, timeout=12) as response:
-                if response.status != 200:
-                    raise RuntimeError(f"Unexpected status {response.status}")
-                return json.load(response)
-        except urllib.error.HTTPError as exc:
-            raise RuntimeError(f"ZITADEL API returned HTTP {exc.code}") from None
+            return json.loads(body)
+        except json.JSONDecodeError:
+            raise RuntimeError("ZITADEL API returned malformed JSON") from None
 
     def inventory():
         response = post("/admin/v1/sms/_search", {})
