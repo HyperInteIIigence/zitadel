@@ -14,6 +14,9 @@ import subprocess
 
 DESCRIPTION = "HyperSMS / PlainApp (TEST - INACTIVE)"
 API_ORIGIN = "https://gatekeeper.hyperintelligence.infrastructure"
+# The API proto requires a non-empty endpoint. This protected route intentionally
+# has no SMS handler and must reject unauthenticated deliveries.
+DISABLED_ENDPOINT = "https://intelligence.hyperit.net.au/__hypersms/disabled"
 
 
 def load_token(path):
@@ -102,15 +105,15 @@ def main():
             raise RuntimeError("Matching name belongs to a non-HTTP provider")
         if provider.get("state") != "SMS_PROVIDER_CONFIG_INACTIVE":
             raise RuntimeError("Matching provider is not inactive; refusing to modify")
-        if provider.get("http", {}).get("endpoint"):
-            raise RuntimeError("Matching provider has a configured endpoint; refusing to modify")
+        if provider.get("http", {}).get("endpoint") != DISABLED_ENDPOINT:
+            raise RuntimeError("Existing test provider endpoint differs; refusing to modify")
         print("EXISTING_INACTIVE_PROVIDER", provider.get("id"))
         return 0
     if not args.apply:
         print("DRY_RUN: would create inactive test HTTP SMS provider; no changes made")
         return 0
 
-    created = post("/admin/v1/sms/http", {"description": DESCRIPTION, "endpoint": ""})
+    created = post("/admin/v1/sms/http", {"description": DESCRIPTION, "endpoint": DISABLED_ENDPOINT})
     provider_id = created.get("id")
     if not provider_id:
         raise RuntimeError("Create response did not return a provider ID")
@@ -121,8 +124,8 @@ def main():
     provider = updated[0]
     if provider.get("state") != "SMS_PROVIDER_CONFIG_INACTIVE":
         raise RuntimeError("CRITICAL: provider unexpectedly active; investigate before proceeding")
-    if provider.get("http", {}).get("endpoint"):
-        raise RuntimeError("CRITICAL: test provider has unexpected endpoint")
+    if provider.get("http", {}).get("endpoint") != DISABLED_ENDPOINT:
+        raise RuntimeError("CRITICAL: test provider endpoint does not match protected disabled route")
     print("CREATED_AND_VERIFIED_INACTIVE_PROVIDER", provider_id)
     return 0
 
