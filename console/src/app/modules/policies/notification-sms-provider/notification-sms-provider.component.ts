@@ -172,9 +172,7 @@ export class NotificationSMSProviderComponent implements OnInit {
   }
 
   public get hyperSMSProvider(): SMSProvider.AsObject | undefined {
-    return this.smsProviders.find(
-      (provider) => !!provider.http && (provider.description || '').startsWith('HyperSMS / PlainApp'),
-    );
+    return this.smsProviders.find((provider) => this.isHyperSMSProvider(provider));
   }
 
   public get twilio(): SMSProvider.AsObject | undefined {
