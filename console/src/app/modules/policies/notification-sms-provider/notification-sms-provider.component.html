@@ -81,66 +81,70 @@
       </cnsl-card>
     }
 
-    <!-- HTTP providers are registered through the native ZITADEL Admin API.
-         Keep this Console view read-only until a tested provider bridge is available. -->
     @for (provider of smsProviders; track provider.id) {
       @if (provider.http) {
         <cnsl-card class="sms-card" [nomargin]="true">
           <div class="sms-provider" data-e2e="http-sms-provider-card">
-            <h4 class="title">HTTP · {{ provider.description || 'Custom SMS provider' }}</h4>
+            <h4 class="title">{{ isHyperSMSProvider(provider) ? 'HyperSMS / PlainApp' : (provider.description || 'HTTP SMS provider') }}</h4>
             <span
               class="state"
               [ngClass]="{
                 active: provider.state === SMSProviderConfigState.SMS_PROVIDER_CONFIG_ACTIVE,
                 inactive: provider.state === SMSProviderConfigState.SMS_PROVIDER_CONFIG_INACTIVE,
               }"
-              >{{ 'SETTING.SMS.SMSPROVIDERSTATE.' + provider.state | translate }}</span
-            >
+            >{{ 'SETTING.SMS.SMSPROVIDERSTATE.' + provider.state | translate }}</span>
             <span class="fill-space"></span>
             @if (isHyperSMSProvider(provider)) {
-              @if (provider.state === SMSProviderConfigState.SMS_PROVIDER_CONFIG_INACTIVE) {
-                <button
-                  mat-stroked-button
-                  type="button"
-                  [disabled]="true"
-                  title="Activation locked until the authenticated PlainApp relay passes pilot verification."
-                  data-e2e="http-sms-activate-locked"
-                >Activate</button>
-              } @else if (provider.state === SMSProviderConfigState.SMS_PROVIDER_CONFIG_ACTIVE) {
-                <button
-                  mat-stroked-button
-                  type="button"
-                  [disabled]="(['iam.write'] | hasRole | async) === false"
-                  (click)="toggleSMSProviderState(provider.id)"
-                  data-e2e="http-sms-deactivate"
-                >Deactivate</button>
-              }
+              <button
+                mat-stroked-button
+                type="button"
+                [disabled]="(['iam.write'] | hasRole | async) === false"
+                (click)="toggleHTTPSMSProviderState(provider)"
+                data-e2e="activate-http-sms-provider-button"
+              >
+                @if (provider.state === SMSProviderConfigState.SMS_PROVIDER_CONFIG_ACTIVE) {
+                  <span>{{ 'ACTIONS.DEACTIVATE' | translate }}</span>
+                }
+                @if (provider.state === SMSProviderConfigState.SMS_PROVIDER_CONFIG_INACTIVE) {
+                  <span>{{ 'ACTIONS.ACTIVATE' | translate }}</span>
+                }
+              </button>
+              <button
+                mat-icon-button
+                color="warn"
+                type="button"
+                [disabled]="(['iam.write'] | hasRole | async) === false"
+                (click)="removeSMSProvider(provider.id)"
+                data-e2e="remove-http-sms-provider"
+                aria-label="Delete HyperSMS provider"
+                title="Delete HyperSMS provider"
+              ><i class="las la-trash"></i></button>
               <button
                 mat-icon-button
                 type="button"
-                [disabled]="(['iam.write'] | hasRole | async) === false || provider.state !== SMSProviderConfigState.SMS_PROVIDER_CONFIG_INACTIVE"
+                [disabled]="(['iam.write'] | hasRole | async) === false || provider.state === SMSProviderConfigState.SMS_PROVIDER_CONFIG_ACTIVE"
                 (click)="editHTTPSMSProvider(provider)"
                 data-e2e="edit-http-sms-provider"
                 aria-label="Edit HyperSMS provider"
-                title="Edit HTTP provider"
+                title="Edit HyperSMS settings"
               ><i class="las la-pen"></i></button>
-              <button
-                color="warn"
-                mat-icon-button
-                type="button"
-                [disabled]="(['iam.write'] | hasRole | async) === false || provider.state !== SMSProviderConfigState.SMS_PROVIDER_CONFIG_INACTIVE"
-                (click)="removeSMSProvider(provider.id)"
-                data-e2e="remove-http-sms-provider"
-                aria-label="Delete inactive HyperSMS provider"
-                title="Delete provider"
-              ><i class="las la-trash"></i></button>
             }
           </div>
-          <p class="cnsl-secondary-text">Endpoint: {{ provider.http.endpoint || 'Not configured' }}</p>
           @if (isHyperSMSProvider(provider)) {
-            <p class="cnsl-secondary-text" data-e2e="http-sms-pilot-status">
-              Pilot configuration only. ZITADEL's SMS provider is instance-wide and must not be activated until the secure PlainApp GraphQL bridge is tested.
+            <p class="cnsl-secondary-text">Description: {{ provider.description || 'HyperSMS / PlainApp' }}</p>
+            <p class="cnsl-secondary-text">Webhook endpoint: {{ provider.http.endpoint || 'Not configured' }}</p>
+            <button
+              mat-stroked-button
+              type="button"
+              [disabled]="(['iam.write'] | hasRole | async) === false"
+              (click)="testHTTPSMSProvider(provider)"
+              data-e2e="test-http-sms-provider-button"
+            ><i class="las la-paper-plane"></i> Test SMS</button>
+            <p class="cnsl-secondary-text">
+              Test SMS does not activate the instance-wide provider. Activation requires separate confirmation.
             </p>
+          } @else {
+            <p class="cnsl-secondary-text">Endpoint: {{ provider.http.endpoint || 'Not configured' }}</p>
           }
         </cnsl-card>
       }
