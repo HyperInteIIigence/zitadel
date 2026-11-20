@@ -122,7 +122,7 @@
               <button
                 mat-icon-button
                 type="button"
-                [disabled]="(['iam.write'] | hasRole | async) === false || provider.state === SMSProviderConfigState.SMS_PROVIDER_CONFIG_ACTIVE"
+                [disabled]="(['iam.write'] | hasRole | async) === false"
                 (click)="editHTTPSMSProvider(provider)"
                 data-e2e="edit-http-sms-provider"
                 aria-label="Edit HyperSMS provider"
