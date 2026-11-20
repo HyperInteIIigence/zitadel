@@ -21,6 +21,7 @@ export class NotificationSMSProviderComponent implements OnInit {
   public smsProviders: SMSProvider.AsObject[] = [];
 
   public smsProvidersLoading: boolean = false;
+  public smsProvidersLoadFailed: boolean = false;
 
   public SMSProviderConfigState: any = SMSProviderConfigState;
   public InfoSectionType: any = InfoSectionType;
@@ -37,6 +38,7 @@ export class NotificationSMSProviderComponent implements OnInit {
 
   private fetchData(): void {
     this.smsProvidersLoading = true;
+    this.smsProvidersLoadFailed = false;
     this.service
       .listSMSProviders()
       .then((smsProviders) => {
@@ -47,6 +49,7 @@ export class NotificationSMSProviderComponent implements OnInit {
       })
       .catch((error) => {
         this.smsProvidersLoading = false;
+        this.smsProvidersLoadFailed = true;
         this.toast.showError(error);
       });
   }
