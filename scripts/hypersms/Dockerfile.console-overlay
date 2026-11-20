@@ -1,0 +1,6 @@
+# HyperSMS Console-only packaging.
+# The binary must be built from the exact upstream ZITADEL v4.19.5 tag
+# with only the two reviewed Console source modifications applied.
+# Keep the original runtime filesystem, trust store, user, and entrypoint.
+FROM ghcr.io/zitadel/zitadel:v4.19.5
+COPY .artifacts/bin/linux/amd64/zitadel.local /app/zitadel
