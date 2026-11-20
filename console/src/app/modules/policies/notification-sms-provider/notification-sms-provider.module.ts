@@ -17,6 +17,7 @@ import { InputModule } from '../../input/input.module';
 import { WarnDialogModule } from '../../warn-dialog/warn-dialog.module';
 import { DialogAddSMSProviderComponent } from './dialog-add-sms-provider/dialog-add-sms-provider.component';
 import { DialogEditHttpSmsProviderComponent } from './dialog-edit-http-sms-provider/dialog-edit-http-sms-provider.component';
+import { DialogTestHttpSmsProviderComponent } from './dialog-test-http-sms-provider/dialog-test-http-sms-provider.component';
 import { NotificationSMSProviderComponent } from './notification-sms-provider.component';
 import { PasswordDialogSMSProviderComponent } from './password-dialog-sms-provider/password-dialog-sms-provider.component';
 import { MatDialogModule } from '@angular/material/dialog';
@@ -26,6 +27,7 @@ import { MatDialogModule } from '@angular/material/dialog';
     NotificationSMSProviderComponent,
     DialogAddSMSProviderComponent,
     DialogEditHttpSmsProviderComponent,
+    DialogTestHttpSmsProviderComponent,
     PasswordDialogSMSProviderComponent,
   ],
   imports: [
