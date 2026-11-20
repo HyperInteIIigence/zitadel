@@ -1,0 +1,7 @@
+# Apply explicitly AFTER the existing live compose and static-IP override.
+# This must never be used without an image verified against v4.19.5.
+# Only replaces the ZITADEL API image; all existing volumes, networking,
+# service definitions, and dependencies remain owned by the live stack.
+services:
+  zitadel-api:
+    image: hypersms-zitadel:4.19.5-console-20261120

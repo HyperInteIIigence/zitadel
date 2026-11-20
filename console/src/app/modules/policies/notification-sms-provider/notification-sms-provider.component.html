@@ -7,7 +7,13 @@
   }
 </div>
 
-@if (!smsProvidersLoading) {
+@if (!smsProvidersLoading && smsProvidersLoadFailed) {
+  <p class="cnsl-secondary-text" data-e2e="sms-provider-fetch-error">
+    SMS provider settings could not be loaded. No provider registration state is displayed.
+  </p>
+}
+
+@if (!smsProvidersLoading && !smsProvidersLoadFailed) {
   <div class="sms-providers">
     <cnsl-card class="sms-card" [nomargin]="true">
       <div class="sms-provider">
@@ -59,5 +65,89 @@
         </button>
       </div>
     </cnsl-card>
+
+    <!-- This is a visual placeholder only; provider registration is separate.
+         Do not expose an activation control until the webhook-to-GraphQL bridge is verified. -->
+    @if (!hyperSMSProvider) {
+      <cnsl-card class="sms-card" [nomargin]="true">
+        <div class="sms-provider" data-e2e="hypersms-test-placeholder">
+          <h4 class="title">HyperSMS / PlainApp (TEST)</h4>
+          <span class="state inactive">Not registered</span>
+          <span class="fill-space"></span>
+        </div>
+        <p class="cnsl-secondary-text">
+          Placeholder only. PlainApp GraphQL adapter not connected; SMS sending disabled.
+        </p>
+      </cnsl-card>
+    }
+
+    @for (provider of smsProviders; track provider.id) {
+      @if (provider.http) {
+        <cnsl-card class="sms-card" [nomargin]="true">
+          <div class="sms-provider" data-e2e="http-sms-provider-card">
+            <h4 class="title">{{ isHyperSMSProvider(provider) ? 'HyperSMS / PlainApp' : (provider.description || 'HTTP SMS provider') }}</h4>
+            <span
+              class="state"
+              [ngClass]="{
+                active: provider.state === SMSProviderConfigState.SMS_PROVIDER_CONFIG_ACTIVE,
+                inactive: provider.state === SMSProviderConfigState.SMS_PROVIDER_CONFIG_INACTIVE,
+              }"
+            >{{ 'SETTING.SMS.SMSPROVIDERSTATE.' + provider.state | translate }}</span>
+            <span class="fill-space"></span>
+            @if (isHyperSMSProvider(provider)) {
+              <button
+                mat-stroked-button
+                type="button"
+                [disabled]="(['iam.write'] | hasRole | async) === false"
+                (click)="toggleHTTPSMSProviderState(provider)"
+                data-e2e="activate-http-sms-provider-button"
+              >
+                @if (provider.state === SMSProviderConfigState.SMS_PROVIDER_CONFIG_ACTIVE) {
+                  <span>{{ 'ACTIONS.DEACTIVATE' | translate }}</span>
+                }
+                @if (provider.state === SMSProviderConfigState.SMS_PROVIDER_CONFIG_INACTIVE) {
+                  <span>{{ 'ACTIONS.ACTIVATE' | translate }}</span>
+                }
+              </button>
+              <button
+                mat-icon-button
+                color="warn"
+                type="button"
+                [disabled]="(['iam.write'] | hasRole | async) === false"
+                (click)="removeSMSProvider(provider.id)"
+                data-e2e="remove-http-sms-provider"
+                aria-label="Delete HyperSMS provider"
+                title="Delete HyperSMS provider"
+              ><i class="las la-trash"></i></button>
+              <button
+                mat-icon-button
+                type="button"
+                [disabled]="(['iam.write'] | hasRole | async) === false"
+                (click)="editHTTPSMSProvider(provider)"
+                data-e2e="edit-http-sms-provider"
+                aria-label="Edit HyperSMS provider"
+                title="Edit HyperSMS settings"
+              ><i class="las la-pen"></i></button>
+            }
+          </div>
+          @if (isHyperSMSProvider(provider)) {
+            <p class="cnsl-secondary-text">Description: {{ provider.description || 'HyperSMS / PlainApp' }}</p>
+            <p class="cnsl-secondary-text">Webhook endpoint: {{ provider.http.endpoint || 'Not configured' }}</p>
+            <button
+              mat-stroked-button
+              type="button"
+              [disabled]="(['iam.write'] | hasRole | async) === false"
+              (click)="testHTTPSMSProvider(provider)"
+              data-e2e="test-http-sms-provider-button"
+            ><i class="las la-paper-plane"></i> Test SMS</button>
+            <p class="cnsl-secondary-text">
+              Test SMS does not activate the instance-wide provider. Activation requires separate confirmation.
+            </p>
+          } @else {
+            <p class="cnsl-secondary-text">Endpoint: {{ provider.http.endpoint || 'Not configured' }}</p>
+          }
+        </cnsl-card>
+      }
+    }
   </div>
 }

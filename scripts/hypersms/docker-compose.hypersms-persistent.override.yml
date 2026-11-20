@@ -1,0 +1,22 @@
+# Persistent Gatekeeper Compose override for the HyperSMS Console variant.
+# Preserves existing static IP topology. Restore prior local backup to revert.
+services:
+  proxy:
+    extra_hosts:
+      - "hyperspace.hyperintelligence.infrastructure:10.1.1.101"
+    networks:
+      zitadel:
+        ipv4_address: 172.23.0.2
+  zitadel-login:
+    networks:
+      zitadel:
+        ipv4_address: 172.23.0.3
+  zitadel-api:
+    image: hypersms-zitadel:4.19.5-console-20261120
+    networks:
+      zitadel:
+        ipv4_address: 172.23.0.5
+  postgres:
+    networks:
+      zitadel:
+        ipv4_address: 172.23.0.4

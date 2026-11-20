@@ -298,6 +298,8 @@ import {
   UpdateSAMLProviderResponse,
   UpdateSecretGeneratorRequest,
   UpdateSecretGeneratorResponse,
+  UpdateSMSProviderHTTPRequest,
+  UpdateSMSProviderHTTPResponse,
   UpdateSMSProviderTwilioRequest,
   UpdateSMSProviderTwilioResponse,
   UpdateSMSProviderTwilioTokenRequest,
@@ -1015,6 +1017,10 @@ export class AdminService {
 
   public updateSMSProviderTwilio(req: UpdateSMSProviderTwilioRequest): Promise<UpdateSMSProviderTwilioResponse.AsObject> {
     return this.grpcService.admin.updateSMSProviderTwilio(req, null).then((resp) => resp.toObject());
+  }
+
+  public updateSMSProviderHTTP(req: UpdateSMSProviderHTTPRequest): Promise<UpdateSMSProviderHTTPResponse.AsObject> {
+    return this.grpcService.admin.updateSMSProviderHTTP(req, null).then((resp) => resp.toObject());
   }
 
   public removeSMSProvider(id: string): Promise<RemoveSMSProviderResponse.AsObject> {

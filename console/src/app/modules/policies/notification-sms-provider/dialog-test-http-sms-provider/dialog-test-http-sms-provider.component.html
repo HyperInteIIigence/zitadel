@@ -1,0 +1,35 @@
+<h1 mat-dialog-title>Test HyperSMS / PlainApp</h1>
+<div mat-dialog-content>
+  <p class="cnsl-secondary-text">Send one test SMS from the configured PlainApp handset without changing the active ZITADEL SMS provider.</p>
+  <form [formGroup]="form" (ngSubmit)="send()">
+    <cnsl-form-field class="sms-form-field" label="Test recipient (E.164)">
+      <cnsl-label>Test recipient (+614…)</cnsl-label>
+      <input cnslInput formControlName="number" data-e2e="hypersms-test-number" autocomplete="off" />
+    </cnsl-form-field>
+    <cnsl-form-field class="sms-form-field" label="Test message">
+      <cnsl-label>Message</cnsl-label>
+      <input cnslInput formControlName="body" data-e2e="hypersms-test-message" autocomplete="off" />
+    </cnsl-form-field>
+    @if (form.controls.number.invalid && form.controls.number.touched) {
+      <p class="cnsl-secondary-text">Enter an explicitly approved international-format test number.</p>
+    }
+    @if (error) {
+      <p role="alert" data-e2e="hypersms-test-error">{{ error }}</p>
+    }
+    @if (result) {
+      <p role="status" data-e2e="hypersms-test-result">{{ result }}</p>
+    }
+  </form>
+  <p class="cnsl-secondary-text">The test is restricted to the relay's server-side approved numbers. API token and client ID remain in Phase.</p>
+</div>
+<div mat-dialog-actions class="action">
+  <button mat-stroked-button type="button" (click)="dialogRef.close()">Close</button>
+  <button
+    mat-raised-button
+    color="primary"
+    type="button"
+    [disabled]="form.invalid || sending"
+    (click)="send()"
+    data-e2e="hypersms-send-test"
+  >{{ sending ? 'Sending…' : 'Send test SMS' }}</button>
+</div>

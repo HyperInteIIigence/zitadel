@@ -1,5 +1,8 @@
 import { Component, Input, OnInit } from '@angular/core';
-import { AddSMSProviderTwilioRequest, UpdateSMSProviderTwilioRequest } from 'src/app/proto/generated/zitadel/admin_pb';
+import { HttpClient } from '@angular/common/http';
+import { OAuthService } from 'angular-oauth2-oidc';
+import { lastValueFrom } from 'rxjs';
+import { AddSMSProviderTwilioRequest, UpdateSMSProviderHTTPRequest, UpdateSMSProviderTwilioRequest } from 'src/app/proto/generated/zitadel/admin_pb';
 import { SMSProvider, SMSProviderConfigState } from 'src/app/proto/generated/zitadel/settings_pb';
 
 import { MatDialog } from '@angular/material/dialog';
@@ -9,6 +12,8 @@ import { InfoSectionType } from '../../info-section/info-section.component';
 import { WarnDialogComponent } from '../../warn-dialog/warn-dialog.component';
 import { PolicyComponentServiceType } from '../policy-component-types.enum';
 import { DialogAddSMSProviderComponent } from './dialog-add-sms-provider/dialog-add-sms-provider.component';
+import { DialogEditHttpSmsProviderComponent } from './dialog-edit-http-sms-provider/dialog-edit-http-sms-provider.component';
+import { DialogTestHttpSmsProviderComponent } from './dialog-test-http-sms-provider/dialog-test-http-sms-provider.component';
 
 @Component({
   selector: 'cnsl-notification-sms-provider',
@@ -21,6 +26,7 @@ export class NotificationSMSProviderComponent implements OnInit {
   public smsProviders: SMSProvider.AsObject[] = [];
 
   public smsProvidersLoading: boolean = false;
+  public smsProvidersLoadFailed: boolean = false;
 
   public SMSProviderConfigState: any = SMSProviderConfigState;
   public InfoSectionType: any = InfoSectionType;
@@ -29,6 +35,8 @@ export class NotificationSMSProviderComponent implements OnInit {
     private service: AdminService,
     private dialog: MatDialog,
     private toast: ToastService,
+    private readonly http: HttpClient,
+    private readonly oauth: OAuthService,
   ) {}
 
   ngOnInit(): void {
@@ -37,6 +45,7 @@ export class NotificationSMSProviderComponent implements OnInit {
 
   private fetchData(): void {
     this.smsProvidersLoading = true;
+    this.smsProvidersLoadFailed = false;
     this.service
       .listSMSProviders()
       .then((smsProviders) => {
@@ -47,6 +56,7 @@ export class NotificationSMSProviderComponent implements OnInit {
       })
       .catch((error) => {
         this.smsProvidersLoading = false;
+        this.smsProvidersLoadFailed = true;
         this.toast.showError(error);
       });
   }
@@ -84,6 +94,93 @@ export class NotificationSMSProviderComponent implements OnInit {
         }
       }
     });
+  }
+
+  /**
+   * The HTTP provider's endpoint is an instance-wide authentication setting.
+   * Editing is restricted to the HyperSMS pilot provider and never activates it.
+   */
+  public editHTTPSMSProvider(provider: SMSProvider.AsObject): void {
+    if (!this.isHyperSMSProvider(provider) || !provider.http || !provider.id) return;
+    const dialogRef = this.dialog.open(DialogEditHttpSmsProviderComponent, {
+      width: '560px',
+      data: { provider },
+    });
+    dialogRef.afterClosed().subscribe((req?: UpdateSMSProviderHTTPRequest) => {
+      if (!req || req.getId() !== provider.id) return;
+      this.service
+        .updateSMSProviderHTTP(req)
+        .then(() => {
+          this.toast.showInfo('HyperSMS HTTP provider updated');
+          this.fetchData();
+        })
+        .catch((error) => this.toast.showError(error));
+    });
+  }
+
+  /**
+   * Test SMS is an independent, privileged, allowlisted relay request.
+   * It does not activate the instance-wide SMS provider.
+   */
+  public testHTTPSMSProvider(provider: SMSProvider.AsObject): void {
+    if (!this.isHyperSMSProvider(provider)) return;
+    this.dialog.open(DialogTestHttpSmsProviderComponent, {
+      width: '500px',
+      data: { provider },
+    });
+  }
+
+  /**
+   * Use Twilio's same Activate/Deactivate API path. An instance-wide
+   * activation requires a second explicit operator confirmation.
+   */
+  public toggleHTTPSMSProviderState(provider: SMSProvider.AsObject): void {
+    if (!this.isHyperSMSProvider(provider) || !provider.id) return;
+    if (provider.state === SMSProviderConfigState.SMS_PROVIDER_CONFIG_ACTIVE) {
+      this.toggleSMSProviderState(provider.id);
+      return;
+    }
+    if (provider.state !== SMSProviderConfigState.SMS_PROVIDER_CONFIG_INACTIVE) return;
+
+    const ref = this.dialog.open(WarnDialogComponent, {
+      width: '480px',
+      data: {
+        titleKey: 'Activate HyperSMS / PlainApp',
+        descriptionKey: 'This changes the SMS provider for the entire ZITADEL instance, not just a pilot account. Confirm only after a successful real handset test and recovery verification.',
+        cancelKey: 'ACTIONS.CANCEL',
+        confirmKey: 'ACTIONS.ACTIVATE',
+        confirmation: 'ACTIVATE',
+        confirmationKey: 'Type ACTIVATE to confirm this instance-wide change',
+      },
+    });
+    ref.afterClosed().subscribe(async (confirmed: boolean) => {
+      if (!confirmed) return;
+      const token = this.oauth.getAccessToken();
+      if (!token || !this.oauth.hasValidAccessToken()) {
+        this.toast.showInfo('Your administrator session has expired; sign in again.');
+        return;
+      }
+      try {
+        const ready = await lastValueFrom(
+          this.http.get<{ ready: boolean }>('/__hypersms/ready', {
+            headers: { Authorization: 'Bearer ' + token },
+          }),
+        );
+        if (!ready.ready) {
+          this.toast.showInfo('HyperSMS is not ready for production. The provider was not activated.');
+          return;
+        }
+        await this.service.activateSMSProvider(provider.id);
+        this.toast.showInfo('SETTING.SMS.ACTIVATED', true);
+        this.fetchData();
+      } catch {
+        this.toast.showInfo('HyperSMS relay readiness could not be verified; activation was blocked.');
+      }
+    });
+  }
+
+  public isHyperSMSProvider(provider: SMSProvider.AsObject): boolean {
+    return !!provider.http && provider.id === '400389549018054661';
   }
 
   public toggleSMSProviderState(id: string): void {
@@ -129,7 +226,7 @@ export class NotificationSMSProviderComponent implements OnInit {
         this.service
           .removeSMSProvider(id)
           .then(() => {
-            this.toast.showInfo('SETTING.SMS.TWILIO.REMOVED', true);
+            this.toast.showInfo('SMS provider removed');
             this.fetchData();
           })
           .catch((error) => {
@@ -137,6 +234,10 @@ export class NotificationSMSProviderComponent implements OnInit {
           });
       }
     });
+  }
+
+  public get hyperSMSProvider(): SMSProvider.AsObject | undefined {
+    return this.smsProviders.find((provider) => this.isHyperSMSProvider(provider));
   }
 
   public get twilio(): SMSProvider.AsObject | undefined {
