@@ -9,27 +9,29 @@ provider or change any configuration.
 """
 import json
 import os
-import ssl
 import sys
-import urllib.error
-import urllib.request
+import subprocess
 
 ORIGIN = "https://gatekeeper.hyperintelligence.infrastructure"
 ID = "400389549018054661"
 DISABLED = "https://intelligence.hyperit.net.au/__hypersms/disabled"
 
 def call(method, path, token):
-    req = urllib.request.Request(
-        ORIGIN + path,
-        method=method,
-        data=b"{}",
-        headers={"Authorization": "Bearer " + token, "Content-Type": "application/json"},
+    if not token or any(c in token for c in '\r\n"\\'):
+        raise RuntimeError("Unsafe token format")
+    # Pass the token to curl over stdin, not as argv or shell interpolation.
+    config = 'header = "Authorization: Bearer ' + token + '"\n'
+    proc = subprocess.run(
+        ["curl", "--silent", "--show-error", "--fail", "--max-time", "10",
+         "--max-redirs", "0", "--proto", "=https", "--request", method,
+         "--header", "Content-Type: application/json", "--data-binary", "{}",
+         "--config", "-", ORIGIN + path],
+        input=config, text=True, capture_output=True, timeout=13,
+        env={"PATH": "/usr/local/bin:/usr/bin:/bin"}, check=False,
     )
-    with urllib.request.urlopen(req, timeout=10, context=ssl.create_default_context()) as res:
-        if res.status < 200 or res.status >= 300:
-            raise RuntimeError("Unexpected ZITADEL API response")
-        raw = res.read(131072)
-    return json.loads(raw) if raw else {}
+    if proc.returncode != 0:
+        raise RuntimeError("ZITADEL HTTPS Admin API error, curl exit " + str(proc.returncode))
+    return json.loads(proc.stdout) if proc.stdout.strip() else {}
 
 def main():
     token = os.environ.get("ZITADEL_API_TOKEN", "")
@@ -59,6 +61,6 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    except (RuntimeError, KeyError, ValueError, urllib.error.URLError) as exc:
+    except (RuntimeError, KeyError, ValueError, subprocess.TimeoutExpired) as exc:
         print("HYPERSMS_SAFEGUARD_BLOCKED", type(exc).__name__, file=sys.stderr)
         sys.exit(1)
