@@ -97,8 +97,6 @@ export class NotificationSMSProviderComponent implements OnInit {
    */
   public editHTTPSMSProvider(provider: SMSProvider.AsObject): void {
     if (!this.isHyperSMSProvider(provider) || !provider.http || !provider.id) return;
-    if (provider.state !== SMSProviderConfigState.SMS_PROVIDER_CONFIG_INACTIVE) return;
-
     const dialogRef = this.dialog.open(DialogEditHttpSmsProviderComponent, {
       width: '560px',
       data: { provider },
