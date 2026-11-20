@@ -59,5 +59,27 @@
         </button>
       </div>
     </cnsl-card>
+
+    <!-- HTTP providers are registered through the native ZITADEL Admin API.
+         Keep this Console view read-only until a tested provider bridge is available. -->
+    @for (provider of smsProviders; track provider.id) {
+      @if (provider.http) {
+        <cnsl-card class="sms-card" [nomargin]="true">
+          <div class="sms-provider" data-e2e="http-sms-provider-card">
+            <h4 class="title">HTTP · {{ provider.description || 'Custom SMS provider' }}</h4>
+            <span
+              class="state"
+              [ngClass]="{
+                active: provider.state === SMSProviderConfigState.SMS_PROVIDER_CONFIG_ACTIVE,
+                inactive: provider.state === SMSProviderConfigState.SMS_PROVIDER_CONFIG_INACTIVE,
+              }"
+              >{{ 'SETTING.SMS.SMSPROVIDERSTATE.' + provider.state | translate }}</span
+            >
+            <span class="fill-space"></span>
+          </div>
+          <p class="cnsl-secondary-text">Endpoint: {{ provider.http.endpoint }}</p>
+        </cnsl-card>
+      }
+    }
   </div>
 }
