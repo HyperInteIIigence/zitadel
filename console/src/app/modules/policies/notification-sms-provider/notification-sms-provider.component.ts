@@ -1,4 +1,7 @@
 import { Component, Input, OnInit } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { OAuthService } from 'angular-oauth2-oidc';
+import { lastValueFrom } from 'rxjs';
 import { AddSMSProviderTwilioRequest, UpdateSMSProviderHTTPRequest, UpdateSMSProviderTwilioRequest } from 'src/app/proto/generated/zitadel/admin_pb';
 import { SMSProvider, SMSProviderConfigState } from 'src/app/proto/generated/zitadel/settings_pb';
 
@@ -32,6 +35,8 @@ export class NotificationSMSProviderComponent implements OnInit {
     private service: AdminService,
     private dialog: MatDialog,
     private toast: ToastService,
+    private readonly http: HttpClient,
+    private readonly oauth: OAuthService,
   ) {}
 
   ngOnInit(): void {
@@ -148,12 +153,29 @@ export class NotificationSMSProviderComponent implements OnInit {
         confirmationKey: 'Type ACTIVATE to confirm this instance-wide change',
       },
     });
-    ref.afterClosed().subscribe((confirmed: boolean) => {
+    ref.afterClosed().subscribe(async (confirmed: boolean) => {
       if (!confirmed) return;
-      this.service.activateSMSProvider(provider.id).then(() => {
+      const token = this.oauth.getAccessToken();
+      if (!token || !this.oauth.hasValidAccessToken()) {
+        this.toast.showInfo('Your administrator session has expired; sign in again.');
+        return;
+      }
+      try {
+        const ready = await lastValueFrom(
+          this.http.get<{ ready: boolean }>('/__hypersms/ready', {
+            headers: { Authorization: 'Bearer ' + token },
+          }),
+        );
+        if (!ready.ready) {
+          this.toast.showInfo('HyperSMS is not ready for production. The provider was not activated.');
+          return;
+        }
+        await this.service.activateSMSProvider(provider.id);
         this.toast.showInfo('SETTING.SMS.ACTIVATED', true);
         this.fetchData();
-      }).catch((error) => this.toast.showError(error));
+      } catch {
+        this.toast.showInfo('HyperSMS relay readiness could not be verified; activation was blocked.');
+      }
     });
   }
 
