@@ -4,7 +4,7 @@ import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { UpdateSMSProviderHTTPRequest } from 'src/app/proto/generated/zitadel/admin_pb';
 import { SMSProvider, SMSProviderConfigState } from 'src/app/proto/generated/zitadel/settings_pb';
 
-const HYPERSMS_ORIGIN = 'https://intelligence.hyperit.net.au';
+const HYPERSMS_ORIGINS = new Set(['https://gatekeeper.hyperintelligence.infrastructure', 'https://intelligence.hyperit.net.au']);
 const HYPERSMS_PATH_PREFIX = '/__hypersms/';
 
 /** Allow only the dedicated HTTPS HyperSMS ingress, not raw PlainApp GraphQL or arbitrary SSRF targets. */
@@ -13,7 +13,7 @@ export function hyperSmsEndpointValidator(control: AbstractControl): ValidationE
   try {
     const parsed = new URL(value);
     if (
-      parsed.origin !== HYPERSMS_ORIGIN ||
+      !HYPERSMS_ORIGINS.has(parsed.origin) ||
       !parsed.pathname.startsWith(HYPERSMS_PATH_PREFIX) ||
       parsed.username ||
       parsed.password ||
