@@ -63,3 +63,15 @@ Never prune, modify provider activation, reset certificates, or migrate the data
 The Phase secret `ZITADEL_API_TOKEN` was injected from application `HyperIntelligence`, environment `Production`, path `/integrations/mcp/provider-readonly`. The credential **can create SMS providers** despite the read-only-labelled path; audit its account permissions and adopt a narrower administrative credential. No token values were committed or logged.
 
 **PlainApp GraphQL is not connected.** There is no production HyperSMS webhook-to-GraphQL bridge and no SMS sending or delivery verification in scope. Keep this test provider inactive until the adapter, replay protection, signature checks and controlled end-to-end testing are complete.
+
+## HyperSMS pilot editor deployment — 20 November 2026
+
+- New custom Console image: `hypersms-zitadel:4.19.5-pilot-edit-20261120`, image ID `sha256:16b49e487f19ce80edffbb01f641627535de7a9a9e3b40a8398d9edd1e9c96bf`.
+- Version-matched upstream ZITADEL v4.19.5 Go binary with the Console edit dialog and HTTP provider AdminService method. Console Angular build and Go rebuild passed.
+- The existing permanent `docker-compose.override.yml` was updated **only** to select the new API image; backup: `docker-compose.override.yml.before-pilot-edit-20261120`.
+- The Compose configuration validates, and the API-only replacement completed with no dependent service recreation. Gatekeeper API, Login and PostgreSQL remain healthy.
+- Live Console HTTPS 200; the served `chunk-Z3FYJC7Q.js` byte-for-byte matched the compiled artifact. New UI provides edit pencil, delete and emergency deactivate; production activate stays disabled.
+- Provider `400389549018054661` remained inactive after replacement, confirmed via Phase-injected read-only check. No messages sent, no provider activation or deactivation.
+- Separate PlainApp pilot compatibility probe to `https://10.1.1.104:8443/graphql` failed TLS hostname validation: certificate subject `Plain` does not match IP `10.1.1.104`. TLS verification was **not** disabled. Provision trusted hostname/CA mapping before API use.
+
+**Pilot SMS sending is not yet ready**: the Go webhook→GraphQL adapter, authenticated handset API token, SMS-capable build and consented test destination must be validated separately.
