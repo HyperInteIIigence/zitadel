@@ -107,7 +107,7 @@ export class NotificationSMSProviderComponent implements OnInit {
       this.service
         .updateSMSProviderHTTP(req)
         .then(() => {
-          this.toast.showInfo('SETTING.SMS.TWILIO.UPDATED', true);
+          this.toast.showInfo('HyperSMS HTTP provider updated');
           this.fetchData();
         })
         .catch((error) => this.toast.showError(error));
@@ -115,7 +115,7 @@ export class NotificationSMSProviderComponent implements OnInit {
   }
 
   public isHyperSMSProvider(provider: SMSProvider.AsObject): boolean {
-    return !!provider.http && !!provider.id && (provider.description || '').startsWith('HyperSMS / PlainApp');
+    return !!provider.http && (provider.id === '400389549018054661' || (provider.description || '').startsWith('HyperSMS / PlainApp'));
   }
 
   public toggleSMSProviderState(id: string): void {
